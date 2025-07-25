@@ -7,10 +7,10 @@ spring:
   application:
     name: identity-service
   datasource:
-    url: "jdbc:mysql://localhost:3306/identity_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    url: "${DB_URL:jdbc:mysql://localhost:3306/identity_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}"
     driverClassName: "com.mysql.cj.jdbc.Driver"
-    username: root
-    password: dev123@
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,10 +21,16 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 jwt:
-  signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+  signerKey: "${JWT_SIGNER_KEY}"
   valid-duration: 3600 # in second
   refreshable-duration: 36000 # in seconds
 
+outbound:
+  identity:
+    client-id: "${GOOGLE_CLIENT_ID}"
+    client-secret: "${GOOGLE_CLIENT_SECRET}"
+    redirect-url: "${OAUTH_REDIRECT_URL}"
+
 app:
   services:
-    profile: http://localhost:8081/profile
+    profile: "${PROFILE_SERVICE_URL:http://localhost:8081/profile}"

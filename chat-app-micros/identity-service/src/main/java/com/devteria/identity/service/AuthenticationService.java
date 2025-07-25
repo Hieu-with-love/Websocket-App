@@ -3,6 +3,7 @@ package com.devteria.identity.service;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -13,18 +14,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import com.devteria.identity.dto.request.AuthenticationRequest;
-import com.devteria.identity.dto.request.IntrospectRequest;
-import com.devteria.identity.dto.request.LogoutRequest;
-import com.devteria.identity.dto.request.RefreshRequest;
+import com.devteria.identity.constant.PredefinedRole;
+import com.devteria.identity.dto.request.*;
 import com.devteria.identity.dto.response.AuthenticationResponse;
+import com.devteria.identity.dto.response.ExchangeTokenResponse;
+import com.devteria.identity.dto.response.GoogleUserInfoResponse;
 import com.devteria.identity.dto.response.IntrospectResponse;
 import com.devteria.identity.entity.InvalidatedToken;
+import com.devteria.identity.entity.Role;
 import com.devteria.identity.entity.User;
 import com.devteria.identity.exception.AppException;
 import com.devteria.identity.exception.ErrorCode;
 import com.devteria.identity.repository.InvalidatedTokenRepository;
 import com.devteria.identity.repository.UserRepository;
+import com.devteria.identity.repository.httpclient.OutboundAuthenticationClient;
+import com.devteria.identity.repository.httpclient.OutboundUserInfoClient;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -44,6 +48,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    OutboundAuthenticationClient outboundAuthenticationClient;
+    OutboundUserInfoClient outboundUserInfoClient;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -57,7 +63,22 @@ public class AuthenticationService {
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
 
-    public IntrospectResponse introspect(IntrospectRequest request)  {
+    @NonFinal
+    @Value("${outbound.identity.client-id}")
+    private String CLIENT_ID;
+
+    @NonFinal
+    @Value("${outbound.identity.client-secret}")
+    private String CLIENT_SECRET;
+
+    @NonFinal
+    private String GRANT_TYPE = "authorization_code";
+
+    @NonFinal
+    @Value("${outbound.identity.redirect-url}")
+    private String REDIRECT_URI;
+
+    public IntrospectResponse introspect(IntrospectRequest request) {
         var token = request.getToken();
         boolean isValid = true;
 
@@ -68,6 +89,36 @@ public class AuthenticationService {
         }
 
         return IntrospectResponse.builder().valid(isValid).build();
+    }
+
+    public AuthenticationResponse outboundAuthenticate(String code) {
+        ExchangeTokenResponse accessToken =
+                outboundAuthenticationClient.exchangeAccessToken(ExchangeTokenRequest.builder()
+                        .code(code)
+                        .clientId(CLIENT_ID)
+                        .clientSecret(CLIENT_SECRET)
+                        .grantType(GRANT_TYPE)
+                        .redirectUri(REDIRECT_URI)
+                        .build());
+        log.info("EXCHANGE TOKEN RESPONSE: {}", accessToken);
+
+        GoogleUserInfoResponse userInfo = outboundUserInfoClient.getUserInfo("json", accessToken.getAccessToken());
+        log.info("EXCHANGE USER INFO RESPONSE: {}", userInfo);
+
+        User user = userRepository.findByUsername(userInfo.getEmail()).orElseGet(() -> {
+            User newUser = User.builder()
+                    .username(userInfo.getEmail())
+                    .emailVerified(userInfo.isVerifiedEmail())
+                    .roles(Collections.singleton(
+                            Role.builder().name(PredefinedRole.USER_ROLE).build()))
+                    .build();
+            log.info("NEW USER: {}", newUser);
+            return userRepository.save(newUser);
+        });
+
+        return AuthenticationResponse.builder()
+                .token(accessToken.getAccessToken())
+                .build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -96,7 +147,7 @@ public class AuthenticationService {
                     InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
-        } catch (AppException exception){
+        } catch (AppException exception) {
             log.info("Token already expired");
         }
     }
@@ -130,8 +181,7 @@ public class AuthenticationService {
                 .issuer("devteria.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
-                ))
+                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
                 .build();
@@ -155,8 +205,12 @@ public class AuthenticationService {
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         Date expiryTime = (isRefresh)
-                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime()
-                .toInstant().plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS).toEpochMilli())
+                ? new Date(signedJWT
+                        .getJWTClaimsSet()
+                        .getIssueTime()
+                        .toInstant()
+                        .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
+                        .toEpochMilli())
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
