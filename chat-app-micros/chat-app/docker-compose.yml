@@ -1,0 +1,14 @@
+services:
+  mongodb:
+    image: bitnami/mongodb:8.0.12-debian-12-r0
+    container_name: mongodb_container
+    ports:
+      - "27017:27017" # Expose MongoDB on port 27017
+    volumes:
+      - mongo_data:/data/db   # volume lưu trữ data vĩnh viễn
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+
+volumes:
+  mongo_data:
