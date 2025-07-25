@@ -2,10 +2,7 @@ package com.devteria.identity.controller;
 
 import java.text.ParseException;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.devteria.identity.dto.request.*;
 import com.devteria.identity.dto.response.AuthenticationResponse;
@@ -24,7 +21,14 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationController {
     AuthenticationService authenticationService;
 
-
+    @PostMapping("/outbound/authenticate")
+    ApiResponse<AuthenticationResponse> outboundAuthenticate(@RequestParam("code") String code) {
+        var result = authenticationService.outboundAuthenticate(code);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .message("Authentication successful")
+                .result(result)
+                .build();
+    }
 
     @PostMapping("/token")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
