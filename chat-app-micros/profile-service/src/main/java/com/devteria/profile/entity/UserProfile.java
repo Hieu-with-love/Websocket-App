@@ -26,13 +26,24 @@ public class UserProfile {
     @Property("userId")
     String userId;
 
+    @Property("avatar")
     String avatar;
 
+    @Property("username")
     String username;
+    
+    @Property("email")
     String email;
 
+    @Property("firstName")
     String firstName;
+    
+    @Property("lastName")
     String lastName;
+    
+    @Property("dob")
     LocalDate dob;
+    
+    @Property("city")
     String city;
 }

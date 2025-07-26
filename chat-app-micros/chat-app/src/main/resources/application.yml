@@ -3,8 +3,9 @@ spring:
     name: chat-app
   data:
     mongodb:
-      uri: mongodb://root:root@localhost:27017/chat_app
-
+      uri: mongodb://root:root@localhost:27017/chat_app?authSource=admin
+      database: chat_app
+      auto-index-creation: true
 
 springdoc:
   api-docs:

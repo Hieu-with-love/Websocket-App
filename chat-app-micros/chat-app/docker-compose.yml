@@ -5,10 +5,18 @@ services:
     ports:
       - "27017:27017" # Expose MongoDB on port 27017
     volumes:
-      - mongo_data:/data/db   # volume lưu trữ data vĩnh viễn
+      - mongo_data:/bitnami/mongodb   # volume lưu trữ data vĩnh viễn
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGODB_ROOT_USER: root
+      MONGODB_ROOT_PASSWORD: root
+      MONGODB_DATABASE: chat_app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mongo_data:
