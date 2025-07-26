@@ -6,12 +6,28 @@ export interface ChatUser {
   lastSeen?: string;
 }
 
-export interface Conversation extends ChatUser {
+export interface Participant {
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string;
+}
+
+export interface ConversationRequest {
+  type: string; // direct, group, or channel
+  participantIds: string[];
+}
+
+export interface ConversationResponse {
   id: string;
-  lastMessage: string;
-  time: string;
-  unreadCount?: number;
-  isGroup?: boolean;
+  type: string; // direct, group, or channel
+  participantHash: string;
+  conversationAvatar: string;
+  conversationName: string;
+  participants: Participant[];
+  createdAt: string;
+  modifiedAt: string;
 }
 
 export interface Message {
