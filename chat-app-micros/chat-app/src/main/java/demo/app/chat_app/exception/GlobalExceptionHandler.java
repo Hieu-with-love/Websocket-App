@@ -1,6 +1,6 @@
-package com.devteria.profile.exception;
+package demo.app.chat_app.exception;
 
-import com.devteria.profile.dto.ApiResponse;
+import demo.app.chat_app.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     private static final String MIN_ATTRIBUTE = "min";
 
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse> handlingRuntimeException(Exception exception) {
+    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
         log.error("Exception: ", exception);
         ApiResponse apiResponse = new ApiResponse();
 

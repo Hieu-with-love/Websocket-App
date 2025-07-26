@@ -26,3 +26,5 @@ spring:
           uri: http://localhost:8090
           predicates:
             - Path=${app.api-prefix}/chat/**
+          filters:
+            - StripPrefix=2

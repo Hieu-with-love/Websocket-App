@@ -27,7 +27,7 @@ public class Conversation {
     String participantsHash; // u1_u2,
 
     @Field("participant_infos")
-    List<ParticipantInfo> participantInfos; //embedded documents
+    List<ParticipantInfo> participants; //embedded documents
 
     @Field("created_at")
     Instant createdAt;

@@ -64,27 +64,27 @@ public class UserService {
 
         var profile = profileClient.createProfile(profileRequest);
 
-        NotificationEvent notificationEvent = NotificationEvent.builder()
-                .channel("EMAIL")
-                .recipient(request.getEmail())
-                .subject("Welcome to bookteria")
-                .body("Hello, " + request.getUsername())
-                .build();
+//        NotificationEvent notificationEvent = NotificationEvent.builder()
+//                .channel("EMAIL")
+//                .recipient(request.getEmail())
+//                .subject("Welcome to bookteria")
+//                .body("Hello, " + request.getUsername())
+//                .build();
+//
+//        // Publish message to kafka
+//        kafkaTemplate.send("notification-delivery", notificationEvent);
 
-        // Publish message to kafka
-        kafkaTemplate.send("notification-delivery", notificationEvent);
+        var userCreationResponse = userMapper.toUserResponse(user);
+        userCreationResponse.setId(profile.getResult().getId());
 
-        var userCreationReponse = userMapper.toUserResponse(user);
-        userCreationReponse.setId(profile.getResult().getId());
-
-        return userCreationReponse;
+        return userCreationResponse;
     }
 
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
 
-        User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = userRepository.findById(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         return userMapper.toUserResponse(user);
     }

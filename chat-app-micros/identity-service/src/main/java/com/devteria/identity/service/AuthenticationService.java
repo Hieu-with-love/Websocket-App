@@ -116,8 +116,10 @@ public class AuthenticationService {
             return userRepository.save(newUser);
         });
 
+        String token = generateToken(user);
+
         return AuthenticationResponse.builder()
-                .token(accessToken.getAccessToken())
+                .token(token)
                 .build();
     }
 
