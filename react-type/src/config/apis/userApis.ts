@@ -1,7 +1,8 @@
 import { api } from "./api";
 import { getLocalStorage } from "./storage";
+import type { ApiResponse, UserProfile } from "../../types/user";
 
-export const getMyInfo = async () => {
+export const getMyInfo = async (): Promise<ApiResponse<UserProfile>> => {
   try {
     console.log(getLocalStorage<string>("jwt"));
 
