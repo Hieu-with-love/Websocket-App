@@ -1,7 +1,10 @@
 import "./App.css";
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import HomePage from "./pages/home/HomePage";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import ChatLayout from "./layouts/ChatLayout";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -15,7 +18,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />,
+        element: <Navigate to="/login" replace />,
       },
     ],
   },

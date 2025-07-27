@@ -1,9 +1,13 @@
-import React, { useState } from "react";
-import type { Conversation } from "../../types/chat";
+import React, { useEffect, useState } from "react";
+import type { ConversationResponse } from "../../types/chat";
+import {
+  createConversation,
+  getConversations,
+} from "../../config/apis/conversationApis";
 
 interface ConversationListProps {
   className?: string;
-  onSelectConversation?: (conversation: Conversation) => void;
+  onSelectConversation?: (conversation: ConversationResponse) => void;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -11,76 +15,155 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedId, setSelectedId] = useState<string>("1");
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [conversations, setConversations] = useState<ConversationResponse[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - trong thực tế sẽ fetch từ API
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      name: "Alice Johnson",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b48c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      lastMessage: "Hey! How are you doing?",
-      time: "2m",
-      unreadCount: 3,
-      isOnline: true,
-    },
-    {
-      id: "2",
-      name: "Team Design",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      lastMessage: "The new mockups are ready for review",
-      time: "5m",
-      unreadCount: 1,
-      isOnline: true,
-      isGroup: true,
-    },
-    {
-      id: "3",
-      name: "Bob Smith",
-      avatar:
-        "https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      lastMessage: "Thanks for the meeting notes",
-      time: "1h",
-      isOnline: false,
-    },
-    {
-      id: "4",
-      name: "Carol Williams",
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      lastMessage: "Can we schedule a call tomorrow?",
-      time: "2h",
-      unreadCount: 7,
-      isOnline: true,
-    },
-    {
-      id: "5",
-      name: "Project Alpha",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-      lastMessage: "Deployment completed successfully!",
-      time: "3h",
-      isOnline: false,
-      isGroup: true,
-    },
-  ];
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("jwt");
+
+        if (!token) {
+          console.log("No JWT token found, user not logged in");
+          setLoading(false);
+          return;
+        }
+
+        const response = await getConversations();
+        console.log("Conversations response:", response);
+
+        // Assuming the API returns data in response.result or response.data
+        const conversationsData = response.result || response.data || response;
+        console.log("Conversations data:", conversationsData);
+
+        if (conversationsData && conversationsData.length > 0) {
+          console.log(
+            "First conversation modifiedAt:",
+            conversationsData[0].modifiedAt
+          );
+          console.log(
+            "Type of modifiedAt:",
+            typeof conversationsData[0].modifiedAt
+          );
+        }
+
+        setConversations(
+          Array.isArray(conversationsData) ? conversationsData : []
+        );
+
+        // Select first conversation if available
+        if (conversationsData && conversationsData.length > 0) {
+          setSelectedId(conversationsData[0].id);
+          onSelectConversation?.(conversationsData[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+        setConversations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConversations();
+  }, [onSelectConversation]);
+
+  // Helper function to get conversation display name
+  const getConversationName = (conversation: ConversationResponse): string => {
+    if (conversation.conversationName) {
+      return conversation.conversationName;
+    }
+
+    // For direct conversations, show the other participant's name
+    if (
+      conversation.type === "direct" &&
+      conversation.participants.length > 0
+    ) {
+      const otherParticipant = conversation.participants[0];
+      return (
+        `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim() ||
+        otherParticipant.username
+      );
+    }
+
+    return "Cuộc trò chuyện";
+  };
+
+  // Helper function to get conversation avatar
+  const getConversationAvatar = (
+    conversation: ConversationResponse
+  ): string => {
+    if (conversation.conversationAvatar) {
+      return conversation.conversationAvatar;
+    }
+
+    // For direct conversations, show the other participant's avatar
+    if (
+      conversation.type === "direct" &&
+      conversation.participants.length > 0
+    ) {
+      return conversation.participants[0].avatarUrl || "/default-avatar.png";
+    }
+
+    return "/default-group-avatar.png";
+  };
+
+  // Helper function to format time
+  const formatTime = (dateString: string): string => {
+    try {
+      if (!dateString) return "N/A";
+
+      const date = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date string:", dateString);
+        return "N/A";
+      }
+
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+      if (diffInMinutes < 1) return "Vừa xong";
+      if (diffInMinutes < 60) return `${diffInMinutes}m`;
+      if (diffInHours < 24) return `${diffInHours}h`;
+      if (diffInDays < 30) return `${diffInDays}d`;
+
+      // For older dates, show actual date
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error, "for date:", dateString);
+      return "N/A";
+    }
+  };
 
   const filteredConversations = conversations.filter((conversation) =>
-    conversation.name.toLowerCase().includes(searchTerm.toLowerCase())
+    getConversationName(conversation)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
-  const handleSelectConversation = (conversation: Conversation) => {
+  const handleSelectConversation = (conversation: ConversationResponse) => {
     setSelectedId(conversation.id);
     onSelectConversation?.(conversation);
   };
 
   return (
-    <div className={`sidebar-area border-r border-slate-200 ${className}`}>
+    <div
+      className={`h-full sidebar-area border-r border-slate-200 ${className}`}
+    >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Tin nhắn</h2>
 
           {/* Search Bar */}
@@ -105,14 +188,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
               placeholder="Tìm kiếm cuộc trò chuyện..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
 
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {loading ? (
+            <div className="p-4 text-center text-gray-500">
+              <p>Đang tải cuộc trò chuyện...</p>
+            </div>
+          ) : filteredConversations.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <p>Không tìm thấy cuộc trò chuyện nào</p>
             </div>
@@ -124,7 +211,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   onClick={() => handleSelectConversation(conversation)}
                   className={`w-full p-3 text-left hover:bg-gray-50 transition-colors duration-200 ${
                     selectedId === conversation.id
-                      ? "bg-primary-50 border-r-2 border-primary-500"
+                      ? "bg-blue-50 border-r-2 border-blue-500"
                       : ""
                   }`}
                 >
@@ -133,13 +220,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     <div className="relative flex-shrink-0">
                       <img
                         className="h-12 w-12 rounded-full"
-                        src={conversation.avatar}
-                        alt={conversation.name}
+                        src={getConversationAvatar(conversation)}
+                        alt={getConversationName(conversation)}
                       />
-                      {conversation.isOnline && (
-                        <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></span>
-                      )}
-                      {conversation.isGroup && (
+                      {conversation.type === "group" && (
                         <span className="absolute -top-1 -right-1 block h-4 w-4 rounded-full bg-blue-500 ring-2 ring-white">
                           <svg
                             className="h-2 w-2 text-white mx-auto mt-0.5"
@@ -158,28 +242,26 @@ const ConversationList: React.FC<ConversationListProps> = ({
                         <p
                           className={`text-sm font-medium truncate ${
                             selectedId === conversation.id
-                              ? "text-primary-900"
+                              ? "text-blue-900"
                               : "text-gray-900"
                           }`}
                         >
-                          {conversation.name}
+                          {getConversationName(conversation)}
                         </p>
                         <p className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                          {conversation.time}
+                          {formatTime(
+                            conversation.modifiedAt ||
+                              conversation.createdAt ||
+                              new Date().toISOString()
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-sm text-gray-500 truncate">
-                          {conversation.lastMessage}
+                          {conversation.type === "DIRECT"
+                            ? "Cuộc trò chuyện riêng tư"
+                            : "Cuộc trò chuyện nhóm"}
                         </p>
-                        {conversation.unreadCount &&
-                          conversation.unreadCount > 0 && (
-                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full ml-2">
-                              {conversation.unreadCount > 99
-                                ? "99+"
-                                : conversation.unreadCount}
-                            </span>
-                          )}
                       </div>
                     </div>
                   </div>
@@ -190,8 +272,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
         </div>
 
         {/* New Chat Button */}
-        <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+        <div className="p-4 border-t border-gray-200 flex-shrink-0">
+          <button className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
             <svg
               className="w-4 h-4 mr-2"
               fill="none"

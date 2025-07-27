@@ -1,8 +1,14 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { OAuth2Config } from "../../config/OAuth2Config";
+import { getToken } from "../../config/apis/AuthApis";
+import { setLocalStorage } from "../../config/apis/storage";
+
+import { toast } from "react-toastify";
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -15,9 +21,28 @@ const LoginPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Login data:", formData);
+
+    try {
+      const data = await getToken(formData.username, formData.password);
+      console.log("Token received:", data);
+
+      // Get token from response
+      const token: string = data.result.token;
+      setLocalStorage({ key: "jwt", value: token });
+
+      // Navigate to home page after successful login
+      toast.success("Đăng nhập thành công!");
+      navigate("/");
+    } catch (error) {
+      toast.error(
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập."
+      );
+      console.error("Login failed:", error);
+      // Here you can add error handling, show toast notification, etc.
+    }
   };
 
   const handleGoogleLogin = () => {

@@ -65,9 +65,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className={`chat-area flex flex-col ${className}`}>
+    <div className={`chat-area flex flex-col h-full ${className}`}>
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 chat-area">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 chat-area flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img
@@ -214,7 +214,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -256,7 +256,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Message Input */}
-      <div className="chat-input-area p-4 border-t">
+      <div className="chat-input-area p-4 border-t flex-shrink-0">
         <div className="flex items-end space-x-2">
           <div className="flex-1">
             <div className="relative">
@@ -292,19 +292,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <button
             onClick={handleSendMessage}
             disabled={!message.trim()}
-            className="p-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
-              className="w-5 h-5"
+              xmlns="http://www.w3.org/2000/svg"
               fill="none"
-              stroke="currentColor"
               viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              className="size-6"
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
               />
             </svg>
           </button>

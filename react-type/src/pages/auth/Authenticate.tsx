@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Authenticate = () => {
   const navigate = useNavigate();
@@ -40,11 +41,12 @@ const Authenticate = () => {
           setSuccess(true);
 
           // Lưu token vào localStorage
-          localStorage.setItem("authToken", data.result.token);
+          localStorage.setItem("jwt", data.result.token);
 
           // Log token for debugging (remove in production)
           console.log("Authentication successful, token:", data.result.token);
 
+          toast.success("Đăng nhập thành công!");
           // Redirect to home page after 2 seconds
           setTimeout(() => {
             navigate("/");
@@ -53,7 +55,7 @@ const Authenticate = () => {
           throw new Error("Không nhận được token từ server");
         }
       } catch (err) {
-        console.error("Authentication error:", err);
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
         setError(
           err instanceof Error ? err.message : "Đã xảy ra lỗi không xác định"
         );
@@ -63,7 +65,7 @@ const Authenticate = () => {
     };
 
     authenticateUser();
-  }, [navigate]);
+  }, []);
 
   // Loading spinner component
   const LoadingSpinner = () => (

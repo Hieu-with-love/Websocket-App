@@ -1,12 +1,60 @@
-import React, { useState } from "react";
-
+import React, { useEffect, useState } from "react";
+import { getMyInfo } from "../../config/apis/userApis";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 interface NavigationProps {
   className?: string;
+}
+
+interface UserInfo {
+  id: string;
+  username: string;
+  email: string;
+  emailVerified: boolean;
+  avatarUrl: string;
 }
 
 const Navigation: React.FC<NavigationProps> = ({ className = "" }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserInfoAsync = async () => {
+      const token = localStorage.getItem("jwt");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        toast.info("Đang tải thông tin người dùng...");
+        const data = await getMyInfo();
+        console.log("User Info:", data);
+
+        const userData = data.result;
+        setUserInfo(userData);
+        toast.success("Tải thông tin người dùng thành công!");
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+        toast.error(
+          "Không thể tải thông tin người dùng. Vui lòng đăng nhập lại."
+        );
+        // Optionally remove invalid token
+        localStorage.removeItem("jwt");
+      }
+    };
+
+    fetchUserInfoAsync();
+  }, []); // Add empty dependency array to run only once
+
+  const logout = () => {
+    localStorage.removeItem("jwt");
+    window.location.href = "/login"; // Redirect to login page
+    toast.success("Đăng xuất thành công!");
+  };
 
   return (
     <nav
@@ -115,11 +163,11 @@ const Navigation: React.FC<NavigationProps> = ({ className = "" }) => {
               >
                 <img
                   className="h-8 w-8 rounded-full ring-2 ring-slate-600"
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  src={userInfo ? userInfo.avatarUrl : "/default-avatar.png"}
                   alt="Profile"
                 />
                 <span className="hidden md:block text-white font-medium">
-                  Nguyễn Văn A
+                  {userInfo ? userInfo.username : "Tài khoản"}
                 </span>
                 <svg
                   className="h-4 w-4 text-slate-300"
@@ -158,12 +206,12 @@ const Navigation: React.FC<NavigationProps> = ({ className = "" }) => {
                     Trợ giúp
                   </a>
                   <div className="border-t border-blue-100"></div>
-                  <a
-                    href="#"
+                  <button
+                    onClick={logout}
                     className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors duration-200 font-medium"
                   >
                     Đăng xuất
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
