@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import type { ConversationResponse } from "../../types/chat";
+import type { ChatUser, ConversationResponse } from "../../types/chat";
 import avatar from "../../../public/photo-1728577740843-5f29c7586afe.avif";
 
-import {
-  createMessage,
-  getConversations,
-  getMessages,
-} from "../../config/apis/conversationApis";
+import { createMessage, getMessages } from "../../config/apis/conversationApis";
+import { getConversation } from "../../config/apis/conversationApis";
 
 import type {
   ChatMessageRequest,
@@ -15,10 +12,27 @@ import type {
 
 interface ChatWindowProps {
   className?: string;
-  target?: ConversationResponse;
+  user?: ConversationResponse;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
+import React, { useState, useEffect } from "react";
+import type { ConversationResponse } from "../../types/chat";
+import avatar from "../../../public/photo-1728577740843-5f29c7586afe.avif";
+
+import { createMessage } from "../../config/apis/conversationApis";
+import { getConversation } from "../../config/apis/conversationApis";
+
+import type {
+  ChatMessageRequest,
+  ChatMessageResponse,
+} from "../../types/ChatMessage";
+
+interface ChatWindowProps {
+  className?: string;
+  user?: ConversationResponse;
+}
+
+const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", user }) => {
   const [message, setMessage] = useState("");
   const [showAttachments, setShowAttachments] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -27,14 +41,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
 
   // Helper functions for conversation display
   const getConversationName = (): string => {
-    if (!target) return "Chọn cuộc trò chuyện";
+    if (!user) return "Chọn cuộc trò chuyện";
 
-    if (target.conversationName) {
-      return target.conversationName;
+    if (user.conversationName) {
+      return user.conversationName;
     }
 
-    if (target.type === "DIRECT" && target.participants.length > 0) {
-      const otherParticipant = target.participants[0];
+    if (user.type === "direct" && user.participants.length > 0) {
+      const otherParticipant = user.participants[0];
       return (
         `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim() ||
         otherParticipant.username
@@ -45,14 +59,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
   };
 
   const getConversationAvatar = (): string => {
-    if (!target) return avatar;
+    if (!user) return avatar;
 
-    if (target.conversationAvatar) {
-      return target.conversationAvatar;
+    if (user.conversationAvatar) {
+      return user.conversationAvatar;
     }
 
-    if (target.type === "DIRECT" && target.participants.length > 0) {
-      return target.participants[0].avatarUrl || avatar;
+    if (user.type === "direct" && user.participants.length > 0) {
+      return user.participants[0].avatarUrl || avatar;
     }
 
     return avatar;
@@ -89,41 +103,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
 
   // Load messages when conversation changes
   useEffect(() => {
-    const loadMessages = async () => {
-      if (!target) {
-        setMessages([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await getMessages(target.id);
-        setMessages(response.result);
-        console.log("Loaded messages for conversation:", target.id, response);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        setMessages([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMessages();
-  }, [target]); // Re-run when target conversation changes
+    if (user?.id) {
+      // TODO: Implement getMessages API call
+      // fetchMessages(user.id);
+    }
+  }, [user?.id]);
 
   const handleSendMessage = async () => {
-    if (!target || !message.trim() || loading) return;
+    if (!message.trim() || !user?.id) return;
 
-    const messageToSend = message.trim();
-    setMessage(""); // Clear input immediately for better UX
+    const messageText = message.trim();
+    setMessage(""); // Clear input immediately
     setLoading(true);
 
     try {
       const newRequest: ChatMessageRequest = {
-        conversationId: target.id,
-        message: messageToSend,
+        consversationId: user.id,
+        message: messageText,
       };
-      console.log("Sending message to conversation:", target.id, newRequest);
 
       const response = await createMessage(newRequest);
       const newMessage = response.result;
@@ -135,7 +132,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
     } catch (error) {
       console.error("Error sending message:", error);
       // Restore message if failed
-      setMessage(messageToSend);
+      setMessage(messageText);
       // TODO: Show error toast
     } finally {
       setLoading(false);
@@ -149,59 +146,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
     }
   };
 
-  if (!target) {
-    return (
-      <div className={`chat-area flex flex-col h-full ${className}`}>
-        <div className="flex-1 flex items-center justify-center bg-gray-50">
-          <div className="text-center text-gray-500">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              Chọn cuộc trò chuyện
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Chọn một cuộc trò chuyện để bắt đầu nhắn tin.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`chat-area flex flex-col h-full ${className}`}>
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 chat-area flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img
-              className="h-10 w-10 rounded-full object-cover"
-              src={getConversationAvatar()}
-              alt={getConversationName()}
+              className="h-10 w-10 rounded-full"
+              // src={user.avatar}
+              src={avatar}
+              alt={user.name}
             />
-            {target.type === "DIRECT" && (
+            {user.isOnline && (
               <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></span>
             )}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {getConversationName()}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
             <p className="text-sm text-gray-500">
-              {target.type === "direct"
+              {user.isOnline
                 ? "Đang hoạt động"
-                : `${target.participants.length} thành viên`}
+                : `Hoạt động ${user.lastSeen || "2h trước"}`}
             </p>
           </div>
         </div>
@@ -253,7 +219,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
               />
             </svg>
           </button>
-
           <div className="relative">
             <button
               onClick={() => setShowAttachments(!showAttachments)}
@@ -333,124 +298,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-500">
-              <svg
-                className="mx-auto h-8 w-8 text-gray-400 mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${
+              msg.sender === "me" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
+                msg.sender === "me" ? "flex-row-reverse space-x-reverse" : ""
+              }`}
+            >
+              {msg.sender === "other" && (
+                <img
+                  className="h-8 w-8 rounded-full"
+                  src={msg.avatar}
+                  alt="Avatar"
                 />
-              </svg>
-              <p className="text-sm">
-                Bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn đầu tiên
-              </p>
+              )}
+              <div
+                className={`px-4 py-2 rounded-2xl ${
+                  msg.sender === "me"
+                    ? "bg-primary-500 text-white"
+                    : "bg-white text-gray-900 border border-gray-200"
+                }`}
+              >
+                <p className="text-sm">{msg.text}</p>
+                <p
+                  className={`text-xs mt-1 ${
+                    msg.sender === "me" ? "text-primary-100" : "text-gray-500"
+                  }`}
+                >
+                  {msg.timestamp}
+                </p>
+              </div>
             </div>
           </div>
-        ) : (
-          messages.map((msg, index) => {
-            const showAvatar =
-              index === messages.length - 1 ||
-              messages[index + 1]?.sender.userId !== msg.sender.userId;
-            const showTime =
-              index === 0 ||
-              new Date(msg.createdAt).getTime() -
-                new Date(messages[index - 1].createdAt).getTime() >
-                300000; // 5 minutes
-
-            return (
-              <div key={msg.id}>
-                {showTime && (
-                  <div className="flex justify-center mb-4">
-                    <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                      {formatMessageTime(msg.createdAt)}
-                    </span>
-                  </div>
-                )}
-
-                <div
-                  className={`flex ${
-                    msg.me ? "justify-end" : "justify-start"
-                  } mb-2`}
-                >
-                  <div
-                    className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
-                      msg.me ? "flex-row-reverse space-x-reverse" : ""
-                    }`}
-                  >
-                    {/* Avatar */}
-                    {!msg.me && showAvatar && (
-                      <img
-                        className="h-6 w-6 rounded-full flex-shrink-0"
-                        src={msg.sender.avatarUrl || avatar}
-                        alt={`${msg.sender.firstName} ${msg.sender.lastName}`}
-                      />
-                    )}
-                    {!msg.me && !showAvatar && (
-                      <div className="h-6 w-6 flex-shrink-0"></div>
-                    )}
-
-                    {/* Message Content */}
-                    <div
-                      className={`group relative ${msg.me ? "ml-auto" : ""}`}
-                    >
-                      {/* Sender name for group chats */}
-                      {!msg.me && target.type === "group" && showAvatar && (
-                        <p className="text-xs text-gray-500 mb-1 px-1">
-                          {msg.sender.firstName} {msg.sender.lastName}
-                        </p>
-                      )}
-
-                      <div
-                        className={`px-4 py-2 rounded-2xl relative ${
-                          msg.me
-                            ? "bg-blue-500 text-white"
-                            : "bg-white text-gray-900 border border-gray-200"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {msg.message}
-                        </p>
-
-                        {/* Message status for sent messages */}
-                        {msg.me && (
-                          <div className="flex items-center justify-end mt-1 space-x-1">
-                            <span className="text-xs opacity-75">
-                              {formatMessageTime(msg.createdAt)}
-                            </span>
-                            <svg
-                              className="w-3 h-3 opacity-75"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+        ))}
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
-        <div className="flex items-end space-x-3">
+      <div className="chat-input-area p-4 border-t flex-shrink-0">
+        <div className="flex items-end space-x-2">
           <div className="flex-1">
             <div className="relative">
               <textarea
@@ -459,15 +349,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
                 onKeyPress={handleKeyPress}
                 placeholder="Nhập tin nhắn..."
                 rows={1}
-                disabled={loading}
-                className="block w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ minHeight: "44px", maxHeight: "120px" }}
+                className="block w-full px-4 py-2 pr-12 border border-gray-300 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                style={{ minHeight: "40px", maxHeight: "120px" }}
               />
-              <div className="absolute right-3 bottom-3 flex items-center space-x-1">
+              <div className="absolute right-2 bottom-2 flex items-center space-x-1">
                 <button
                   onClick={() => setShowEmoji(!showEmoji)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={loading}
                 >
                   <svg
                     className="w-5 h-5"
@@ -484,41 +372,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className = "", target }) => {
               </div>
             </div>
           </div>
-
           <button
             onClick={handleSendMessage}
-            disabled={!message.trim() || loading}
-            className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!message.trim()}
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
-              <svg
-                className="w-5 h-5 animate-spin"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-            )}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+              />
+            </svg>
           </button>
         </div>
       </div>

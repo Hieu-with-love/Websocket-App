@@ -5,10 +5,10 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
-import ChatLayout from "./layouts/ChatLayout";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import Authenticate from "./pages/auth/Authenticate";
+import ChatLayout from "./layouts/ChatLayout";
 
 const router = createBrowserRouter([
   {

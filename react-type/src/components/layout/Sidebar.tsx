@@ -1,10 +1,17 @@
 import React, { useState } from "react";
+import type { UserProfile } from "../../types/user";
 
 interface SidebarProps {
   className?: string;
+  userProfile?: UserProfile | null;
+  isLoadingUser?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  className = "",
+  userProfile = null,
+  isLoadingUser = false,
+}) => {
   const [activeItem, setActiveItem] = useState("home");
 
   const menuItems = [
@@ -96,18 +103,36 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <img
-                className="h-10 w-10 rounded-full"
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                alt="User"
-              />
+              {isLoadingUser ? (
+                <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
+              ) : (
+                <img
+                  className="h-10 w-10 rounded-full object-cover"
+                  src={
+                    userProfile?.avatar ||
+                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  }
+                  alt="User"
+                />
+              )}
               <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                Nguyễn Văn A
-              </p>
-              <p className="text-xs text-gray-500">Đang hoạt động</p>
+              {isLoadingUser ? (
+                <>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {userProfile?.firstName && userProfile?.lastName
+                      ? `${userProfile.firstName} ${userProfile.lastName}`
+                      : userProfile?.username || "Người dùng"}
+                  </p>
+                  <p className="text-xs text-gray-500">Đang hoạt động</p>
+                </>
+              )}
             </div>
           </div>
         </div>
