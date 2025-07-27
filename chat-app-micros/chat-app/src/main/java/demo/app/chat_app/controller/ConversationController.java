@@ -33,4 +33,12 @@ public class ConversationController {
                 .build();
     }
 
+//    public ApiResponse<String> getCurrentConversationId(){
+//        return ApiResponse.<String>builder()
+//                .code(1000)
+//                .message("Get current conversation id success")
+//                .result(conversationService.getCurrentConversationId())
+//                .build();
+//    }
+
 }
