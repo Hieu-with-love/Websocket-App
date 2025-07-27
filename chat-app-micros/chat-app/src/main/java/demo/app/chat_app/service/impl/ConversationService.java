@@ -33,6 +33,12 @@ public class ConversationService {
     ConversationMapper conversationMapper;
     ProfileClient profileClient;
 
+//    public String getCurrentConversationId(){
+//        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+//        List<Conversation> myConversations = conversationRepo.findAllByParticipantsIn(userId);
+//        String conversationId =
+//    }
+
     public List<ConversationResponse> myConversations() {
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
         List<Conversation> conversations = conversationRepo.findAllByParticipantsIn(userId);

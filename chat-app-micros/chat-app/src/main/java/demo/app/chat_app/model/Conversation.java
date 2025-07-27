@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -33,4 +34,19 @@ public class Conversation {
     Instant createdAt;
     @Field("modified_at")
     Instant modifiedAt;
+
+    List<ChatMessage> messages; //embedded documents, not indexed, can be large
+
+    public void addMessage(ChatMessage message) {
+        if (messages == null) {
+            messages = new ArrayList<>();
+        }
+        messages.add(message);
+    }
+
+    public void removeMessage(ChatMessage message) {
+        if (messages != null) {
+            messages.remove(message);
+        }
+    }
 }
